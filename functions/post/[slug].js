@@ -98,7 +98,7 @@ return layout({
   ${breadcrumb}
 
   <article class="post">
-    <img loading="lazy" src="https://picsum.photos/seed/${slug}/800/400">
+   <img loading="lazy" src="/og/${slug}" alt="${post.title}">
     <h1>${post.title}</h1>
 
     <p>⏱ ${readingTime} min read</p>
