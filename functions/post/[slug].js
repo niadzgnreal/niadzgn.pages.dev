@@ -1,4 +1,5 @@
 import { layout } from "../../lib/render";
+import { SITE, canonical, ogImage as buildOg } from "../../lib/config";
 
 const API = "https://api.niadzgn.workers.dev";
 
@@ -54,7 +55,7 @@ export async function onRequest(context) {
     `;
 
     // ======================
-    // SCHEMA
+    // SCHEMA (PAKAI CONFIG DOMAIN)
     // ======================
     const schema = `
 <script type="application/ld+json">
@@ -63,7 +64,7 @@ export async function onRequest(context) {
  "@type": "BlogPosting",
  "headline": "${post.title}",
  "description": "${stripHTML(post.content).slice(0,150)}",
- "mainEntityOfPage": "https://niadzgn.pages.dev/post/${slug}"
+ "mainEntityOfPage": "${canonical("/post/" + slug)}"
 }
 </script>
 
@@ -72,8 +73,8 @@ export async function onRequest(context) {
  "@context": "https://schema.org",
  "@type": "BreadcrumbList",
  "itemListElement": [
-  {"@type":"ListItem","position":1,"name":"Home","item":"https://niadzgn.pages.dev/"},
-  {"@type":"ListItem","position":2,"name":"${post.kategori}","item":"https://niadzgn.pages.dev/kategori/${post.kategori}"},
+  {"@type":"ListItem","position":1,"name":"Home","item":"${SITE.domain}/"},
+  {"@type":"ListItem","position":2,"name":"${post.kategori}","item":"${SITE.domain}/kategori/${post.kategori}"},
   {"@type":"ListItem","position":3,"name":"${post.title}"}
  ]
 }
@@ -83,13 +84,16 @@ export async function onRequest(context) {
     // ======================
     // RENDER
     // ======================
-    const ogImage = "https://niadzgn.pages.dev/og/" + slug;
+    const og = buildOg(slug);
 
     return layout({
       title: post.title,
       description: stripHTML(post.content).slice(0, 160),
-      canonical: "https://niadzgn.pages.dev/post/" + slug,
-      image: ogImage,
+
+      // ✅ pakai config
+      canonical: canonical("/post/" + slug),
+      image: og,
+
       schema: schema,
 
       content: `
@@ -136,7 +140,6 @@ function autoLink(content, related = []) {
 
   return content.replace(/(<a[^>]*>.*?<\/a>)|>([^<]+)</gi, (match, linkPart, textPart) => {
 
-    // ✅ jangan ganggu link yang sudah ada
     if (linkPart) return linkPart;
 
     let text = textPart;
@@ -172,7 +175,7 @@ function autoLink(content, related = []) {
 function sanitizeSlug(slug) {
   return encodeURIComponent(
     (slug || "")
-      .replace(/<[^>]*>?/gm, "") // hapus HTML
+      .replace(/<[^>]*>?/gm, "")
       .replace(/"/g, "")
       .trim()
   );
