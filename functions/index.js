@@ -4,34 +4,52 @@ const API = "https://api.niadzgn.workers.dev";
 // MAIN ROUTER
 // ======================
 export async function onRequest(context) {
-  try {
-    const url = new URL(context.request.url);
-    const path = url.pathname;
+  return withCache(context, 3600, async () => {
+    try {
+      const posts = await getPosts();
 
-    if (path === "/") return home(context);
-    if (path.startsWith("/post/")) return postPage(context);
-    if (path.startsWith("/kategori/")) return kategoriPage(context);
-    if (path === "/api/search") return searchAPI(context);
-    if (path === "/sitemap.xml") return sitemap(context);
-    if (path === "/rss.xml") return rss(context);
+      return html({
+        title: "Auto Blog Modern",
+        description: "Artikel otomatis + SEO + cepat",
+        content: `
+        
+        <div class="hero">
+          <h1>🚀 Auto Blog Modern</h1>
+          <p>Artikel otomatis + SEO + cepat</p>
+        </div>
 
-    return new Response("Not found", { status: 404 });
+        <input class="search" placeholder="Cari artikel...">
+        <div id="results"></div>
 
-  } catch (e) {
-    return new Response("Error: " + e.message);
-  }
+        <h2>Artikel Terbaru</h2>
+
+        <div class="grid">
+          ${posts.slice(0,12).map(p => `
+            <div class="card">
+              <a href="/post/${p.slug}">
+                <img loading="lazy" src="https://picsum.photos/seed/${p.slug}/400/300">
+                <h3>${p.title}</h3>
+              </a>
+            </div>
+          `).join("")}
+        </div>
+
+        ${searchScript()}
+        
+        `
+      });
+
+    } catch (e) {
+      return new Response("Error: " + e.message, { status: 500 });
+    }
+  });
 }
 
 // ======================
-// API FETCH
+// API
 // ======================
 async function getPosts() {
   const res = await fetch(API + "/posts");
-  return res.json();
-}
-
-async function getPost(slug) {
-  const res = await fetch(API + "/post/" + slug);
   return res.json();
 }
 
@@ -56,170 +74,9 @@ async function withCache(context, ttl, handler) {
 }
 
 // ======================
-// HOME
+// HTML + SEO + UI GLOBAL
 // ======================
-async function home(context) {
-  return withCache(context, 3600, async () => {
-    const posts = await getPosts();
-
-    const list = posts.slice(0, 12).map(p => `
-      <div class="card">
-        <a href="/post/${p.slug}">
-          <img loading="lazy" src="https://picsum.photos/seed/${p.slug}/400/300">
-          <h3>${p.title}</h3>
-        </a>
-      </div>
-    `).join("");
-
-    return html({
-      title: "Auto Blog Modern",
-      content: `
-      <div class="hero">
-        <h1>🚀 Auto Blog Modern</h1>
-        <p>Artikel otomatis + SEO + cepat</p>
-      </div>
-
-      <input class="search" placeholder="Cari artikel...">
-      <div id="results"></div>
-
-      <h2>Artikel Terbaru</h2>
-      <div class="grid">${list}</div>
-
-      ${searchScript()}
-      `
-    });
-  });
-}
-
-// ======================
-// POST
-// ======================
-async function postPage(context) {
-  return withCache(context, 3600, async () => {
-    const slug = context.request.url.split("/post/")[1];
-
-    const post = await getPost(slug);
-    if (!post || post.error) return new Response("404", { status: 404 });
-
-    const related = (post.related || []).map(p => `
-      <div class="card">
-        <a href="/post/${p.slug}">
-          <h4>${p.title}</h4>
-        </a>
-      </div>
-    `).join("");
-
-    return html({
-      title: post.title,
-      slug,
-      content: `
-      <article class="post">
-        <img src="https://picsum.photos/seed/${slug}/800/400">
-        <h1>${post.title}</h1>
-        <div>${post.content}</div>
-      </article>
-
-      <h3>Artikel Terkait</h3>
-      <div class="grid">${related}</div>
-      `
-    });
-  });
-}
-
-// ======================
-// KATEGORI
-// ======================
-async function kategoriPage(context) {
-  return withCache(context, 3600, async () => {
-    const slug = context.request.url.split("/kategori/")[1];
-
-    const posts = await getPosts();
-    const filtered = posts.filter(p => p.kategori === slug);
-
-    return html({
-      title: "Kategori " + slug,
-      content: `
-      <h1>Kategori: ${slug}</h1>
-
-      <div class="grid">
-        ${filtered.map(p => `
-          <div class="card">
-            <a href="/post/${p.slug}">${p.title}</a>
-          </div>
-        `).join("")}
-      </div>
-      `
-    });
-  });
-}
-
-// ======================
-// SEARCH API
-// ======================
-async function searchAPI(context) {
-  const url = new URL(context.request.url);
-  const q = url.searchParams.get("q")?.toLowerCase() || "";
-
-  const posts = await getPosts();
-
-  const results = posts.filter(p =>
-    p.title.toLowerCase().includes(q)
-  ).slice(0, 20);
-
-  return new Response(JSON.stringify(results), {
-    headers: { "content-type": "application/json" }
-  });
-}
-
-// ======================
-// SITEMAP
-// ======================
-async function sitemap(context) {
-  const posts = await getPosts();
-
-  const urls = posts.map(p => `
-    <url>
-      <loc>https://niadzgn.pages.dev/post/${p.slug}</loc>
-    </url>
-  `).join("");
-
-  return new Response(`<?xml version="1.0"?>
-  <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  ${urls}
-  </urlset>`, {
-    headers: { "content-type": "application/xml" }
-  });
-}
-
-// ======================
-// RSS
-// ======================
-async function rss(context) {
-  const posts = await getPosts();
-
-  const items = posts.slice(0, 20).map(p => `
-    <item>
-      <title>${p.title}</title>
-      <link>https://niadzgn.pages.dev/post/${p.slug}</link>
-    </item>
-  `).join("");
-
-  return new Response(`<?xml version="1.0"?>
-  <rss version="2.0">
-    <channel>
-      <title>Auto Blog</title>
-      <link>https://niadzgn.pages.dev</link>
-      ${items}
-    </channel>
-  </rss>`, {
-    headers: { "content-type": "application/xml" }
-  });
-}
-
-// ======================
-// HTML TEMPLATE + SEO
-// ======================
-function html({ title, slug, content }) {
+function html({ title, description, content }) {
   return new Response(`<!DOCTYPE html>
 <html lang="id">
 <head>
@@ -227,13 +84,13 @@ function html({ title, slug, content }) {
 <meta name="viewport" content="width=device-width">
 
 <title>${title}</title>
-<meta name="description" content="${title}">
-
-<link rel="canonical" href="https://niadzgn.pages.dev/post/${slug || ""}">
+<meta name="description" content="${description}">
 
 <meta property="og:title" content="${title}">
-<meta property="og:image" content="https://niadzgn.pages.dev/og/${slug || ""}">
-<meta property="og:type" content="article">
+<meta property="og:description" content="${description}">
+<meta property="og:type" content="website">
+
+<meta name="twitter:card" content="summary_large_image">
 
 <style>
 :root{--bg:#fff;--text:#111;--primary:#4f46e5}
@@ -246,14 +103,59 @@ body{margin:0;font-family:system-ui;background:var(--bg);color:var(--text)}
 
 .container{max-width:1100px;margin:auto;padding:20px}
 
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px}
+/* HERO */
+.hero{
+  margin:20px 0;
+  padding:40px;
+  border-radius:12px;
+  text-align:center;
+  background:linear-gradient(135deg,#4f46e5,#6366f1);
+  color:#fff
+}
 
-.card{border:1px solid #ddd;border-radius:12px;padding:10px}
-.card img{width:100%;border-radius:10px}
+/* GRID */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+  gap:20px
+}
 
-.hero{margin:20px;padding:40px;border-radius:12px;text-align:center;background:linear-gradient(135deg,#4f46e5,#6366f1);color:#fff}
+/* CARD */
+.card{
+  border:1px solid #ddd;
+  border-radius:12px;
+  padding:10px;
+  transition:.2s
+}
+.card:hover{transform:translateY(-5px)}
+.card img{
+  width:100%;
+  border-radius:10px
+}
 
-.search{width:100%;padding:12px;border-radius:10px;border:1px solid #ddd;margin:20px 0}
+/* SEARCH */
+.search{
+  width:100%;
+  padding:12px;
+  border-radius:10px;
+  border:1px solid #ddd;
+  margin:20px 0
+}
+
+.search-item{
+  display:block;
+  padding:10px;
+  border:1px solid #ddd;
+  border-radius:8px;
+  margin-bottom:8px;
+  text-decoration:none;
+  color:var(--text)
+}
+
+/* POST */
+.post img{width:100%;border-radius:12px}
+.post h1{margin:15px 0}
+.post-content{line-height:1.8;font-size:16px}
 
 </style>
 </head>
@@ -301,7 +203,9 @@ input?.addEventListener("input", async e=>{
   const data = await res.json();
 
   results.innerHTML = data.map(d=>\`
-    <a href="/post/\${d.slug}">\${d.title}</a>
+    <a class="search-item" href="/post/\${d.slug}">
+      \${d.title}
+    </a>
   \`).join("");
 });
 </script>
