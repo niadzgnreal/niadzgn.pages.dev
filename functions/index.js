@@ -1,51 +1,129 @@
-content: `
+import { layout } from "../lib/render";
+import { getPosts } from "../lib/api";
 
-<div class="hero">
-  <h1>🚀 Auto Blog Modern</h1>
-  <p>Artikel SEO, tutorial, dan teknologi terbaru</p>
-</div>
+// ======================
+// MAIN
+// ======================
+export async function onRequest(context) {
+  try {
+    const url = new URL(context.request.url);
+    const page = parseInt(url.searchParams.get("page")) || 1;
 
-<!-- ======================
-SEO CONTENT (WAJIB)
-====================== -->
-<section class="seo-content">
-  <h2>Blog SEO & Teknologi Terlengkap</h2>
-  <p>
-    Website ini menyediakan berbagai artikel seputar SEO, digital marketing, 
-    dan teknologi terbaru yang dirancang untuk membantu meningkatkan traffic 
-    dan performa website Anda. Semua konten dibuat dengan struktur SEO modern 
-    dan mudah dipahami.
-  </p>
-</section>
+    const posts = await getPosts();
 
-<!-- ======================
-KATEGORI (INTERNAL LINK)
-====================== -->
-<section>
-  <h2>Kategori Populer</h2>
-  <div class="grid">
-    <a class="card" href="/kategori/seo"><h3>SEO</h3></a>
-    <a class="card" href="/kategori/blog"><h3>Blog</h3></a>
-    <a class="card" href="/kategori/teknologi"><h3>Teknologi</h3></a>
-  </div>
-</section>
+    // ======================
+    // PAGINATION
+    // ======================
+    const perPage = 12;
+    const totalPage = Math.ceil(posts.length / perPage);
 
-<!-- ======================
-SEARCH
-====================== -->
-<input class="search" placeholder="Cari artikel...">
-<div id="results"></div>
+    const start = (page - 1) * perPage;
+    const currentPosts = posts.slice(start, start + perPage);
 
-<!-- ======================
-LATEST POSTS
-====================== -->
-<h2>Artikel Terbaru</h2>
+    // ======================
+    // GRID
+    // ======================
+    const grid = currentPosts.map(p => `
+      <div class="card">
+        <a href="/post/${p.slug}">
+          <img loading="lazy" src="https://picsum.photos/seed/${p.slug}/400/300">
+          <h3>${p.title}</h3>
+        </a>
+      </div>
+    `).join("");
 
-<div class="grid">
-  ${grid}
-</div>
+    // ======================
+    // RENDER
+    // ======================
+    return layout({
+      title: "Auto Blog Modern",
+      description: "Artikel otomatis + SEO + cepat",
+      canonical: "https://niadzgn.pages.dev" + (page > 1 ? "/?page=" + page : ""),
+      content: `
+      
+      <div class="hero">
+        <h1>🚀 Auto Blog Modern</h1>
+        <p>Artikel otomatis + SEO + cepat</p>
+      </div>
 
-${pagination(page, totalPage)}
+      <input class="search" placeholder="Cari artikel...">
+      <div id="results"></div>
 
-${searchScript()}
-`
+      <h2>Artikel Terbaru</h2>
+
+      <div class="grid">
+        ${grid}
+      </div>
+
+      ${pagination(page, totalPage)}
+
+      ${searchScript()}
+      
+      `
+    });
+
+  } catch (e) {
+    return new Response("Error: " + e.message, { status: 500 });
+  }
+}
+
+// ======================
+// PAGINATION
+// ======================
+function pagination(current, total) {
+  if (total <= 1) return "";
+
+  let html = `<div class="pagination">`;
+
+  const group = Math.floor((current - 1) / 5);
+  const start = group * 5 + 1;
+  const end = Math.min(start + 4, total);
+
+  // PREV
+  if (start > 1) {
+    html += `<a href="/?page=${start - 1}">«</a>`;
+  }
+
+  // NUMBER
+  for (let i = start; i <= end; i++) {
+    html += `<a href="/?page=${i}" class="${i === current ? "active" : ""}">${i}</a>`;
+  }
+
+  // NEXT
+  if (end < total) {
+    html += `<a href="/?page=${end + 1}">»</a>`;
+  }
+
+  html += `</div>`;
+  return html;
+}
+
+// ======================
+// SEARCH SCRIPT
+// ======================
+function searchScript() {
+  return `
+<script>
+const input = document.querySelector(".search");
+const results = document.getElementById("results");
+
+input?.addEventListener("input", async e=>{
+  const q = e.target.value;
+
+  if(q.length < 2){
+    results.innerHTML = "";
+    return;
+  }
+
+  const res = await fetch("/api/search?q="+q);
+  const data = await res.json();
+
+  results.innerHTML = data.map(d=>\`
+    <a class="search-item" href="/post/\${d.slug}">
+      <h4>\${d.title}</h4>
+    </a>
+  \`).join("");
+});
+</script>
+`;
+}
