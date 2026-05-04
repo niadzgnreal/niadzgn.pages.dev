@@ -22,45 +22,72 @@ export async function onRequest(context) {
 <svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
 
   <defs>
+    <!-- Background -->
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#0f172a"/>
-      <stop offset="100%" stop-color="#1e293b"/>
+      <stop offset="0%" stop-color="#020617"/>
+      <stop offset="100%" stop-color="#0f172a"/>
     </linearGradient>
 
+    <!-- Accent -->
     <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#4f46e5"/>
       <stop offset="100%" stop-color="#22d3ee"/>
     </linearGradient>
 
+    <!-- Glass -->
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.15)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0.02)"/>
+    </linearGradient>
+
+    <!-- Blur -->
     <filter id="blur">
-      <feGaussianBlur stdDeviation="40" />
+      <feGaussianBlur stdDeviation="80"/>
     </filter>
   </defs>
 
-  <!-- Background -->
+  <!-- BG -->
   <rect width="1200" height="630" fill="url(#bg)"/>
 
-  <!-- Glow Circle -->
-  <circle cx="1000" cy="120" r="220" fill="url(#accent)" opacity="0.25" filter="url(#blur)"/>
+  <!-- Glow blob -->
+  <circle cx="1000" cy="120" r="260" fill="url(#accent)" opacity="0.25" filter="url(#blur)"/>
 
-  <!-- Wave -->
-  <path d="M0,480 C300,380 900,680 1200,520 L1200,630 L0,630 Z"
-        fill="url(#accent)" opacity="0.12"/>
+  <!-- Secondary glow -->
+  <circle cx="200" cy="550" r="200" fill="#4f46e5" opacity="0.15" filter="url(#blur)"/>
 
-  <!-- Category -->
-  <rect x="60" y="60" rx="12" ry="12" width="220" height="42" fill="#4f46e5"/>
-  <text x="80" y="88" fill="white" font-size="20" font-family="sans-serif">
+  <!-- Glass card -->
+  <rect x="50" y="50" width="1100" height="530" rx="24"
+        fill="url(#glass)" stroke="rgba(255,255,255,0.1)"/>
+
+  <!-- Grid lines -->
+  <g opacity="0.05">
+    <line x1="0" y1="100" x2="1200" y2="100" stroke="#fff"/>
+    <line x1="0" y1="300" x2="1200" y2="300" stroke="#fff"/>
+    <line x1="0" y1="500" x2="1200" y2="500" stroke="#fff"/>
+  </g>
+
+  <!-- Category badge -->
+  <rect x="100" y="100" rx="14" ry="14" width="260" height="48" fill="#4f46e5"/>
+  <text x="130" y="132" fill="white" font-size="22" font-family="sans-serif">
     ${escapeXML(kategori)}
   </text>
 
   <!-- Title -->
-  <text x="60" y="260" fill="white" font-size="54" font-weight="bold" font-family="sans-serif">
-    ${wrapText(title, 28)}
+  <text x="100" y="260" fill="white" font-size="60" font-weight="bold" font-family="sans-serif">
+    ${wrapText(title, 26)}
   </text>
 
+  <!-- Divider -->
+  <rect x="100" y="420" width="300" height="4" fill="url(#accent)" opacity="0.8"/>
+
   <!-- Footer -->
-  <text x="60" y="580" fill="#94a3b8" font-size="22" font-family="sans-serif">
+  <text x="100" y="520" fill="#94a3b8" font-size="22" font-family="sans-serif">
     niadzgn.pages.dev
+  </text>
+
+  <!-- Mini badge -->
+  <text x="980" y="560" fill="#94a3b8" font-size="18">
+    ⚡ AutoBlog
   </text>
 
 </svg>
