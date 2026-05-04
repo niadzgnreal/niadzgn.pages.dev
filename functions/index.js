@@ -29,12 +29,18 @@ export async function onRequest(context) {
     // GRID
     // ======================
     const grid = currentPosts.map(p => `
-      <div class="card">
-        <a href="/post/${sanitizeSlug(p.slug)}">
-         <img loading="lazy" src="https://picsum.photos/seed/${sanitizeSlug(p.slug)}/400/300">
-          <h3>${p.title}</h3>
-        </a>
-      </div>
+     <div class="card">
+  <a href="/post/${sanitizeSlug(p.slug)}">
+    <img 
+      loading="lazy"
+      src="/og/${sanitizeSlug(p.slug)}"
+      alt="${p.title}"
+      width="400"
+      height="300"
+    >
+    <h3>${p.title}</h3>
+  </a>
+</div>
     `).join("");
 
     // ======================
