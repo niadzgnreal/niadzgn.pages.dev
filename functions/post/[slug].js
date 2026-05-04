@@ -97,7 +97,7 @@ export async function onRequest(context) {
       schema: schema,
 
       content: `
-      ${breadcrumb}
+      <div class="container">${breadcrumb}
 
       <article class="post">
         <img loading="lazy" src="/og/${slug}" alt="${post.title}">
@@ -120,6 +120,7 @@ export async function onRequest(context) {
           </div>
         `).join("")}
       </div>
+       </div>
       `
     });
 
