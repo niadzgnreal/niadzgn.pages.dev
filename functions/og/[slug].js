@@ -73,7 +73,7 @@ export async function onRequest(context) {
   </text>
 
   <!-- Title -->
-  <text x="400" y="260" fill="white" font-size="60" font-weight="bold" font-family="sans-serif">
+  <text x="700" y="260" fill="white" font-size="60" font-weight="bold" font-family="sans-serif">
     ${wrapText(title, 26)}
   </text>
 
