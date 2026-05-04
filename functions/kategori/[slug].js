@@ -1,23 +1,22 @@
 import { layout } from "../../lib/render";
 import { canonical, sanitizeSlug } from "../../lib/config";
+import { getByKategori } from "../../lib/api";
 
 export async function onRequest(context) {
   const { slug } = context.params;
 
   const safeSlug = sanitizeSlug(slug);
 
-  const posts = await fetch("https://api.niadzgn.workers.dev/posts")
-    .then(r => r.json());
-
-  const filtered = posts.filter(p =>
-    (p.kategori || "").toLowerCase() === safeSlug.toLowerCase()
-  );
+  // ======================
+  // DATA (PAKAI API LAYER)
+  // ======================
+  const filtered = await getByKategori(safeSlug);
 
   return layout({
     title: "Kategori " + safeSlug,
     description: "Kategori " + safeSlug,
 
-    // ✅ tambah SEO (tidak ubah flow)
+    // ✅ SEO
     canonical: canonical("/kategori/" + safeSlug),
 
     content: `
