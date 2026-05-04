@@ -1,96 +1,54 @@
-export async function onRequest(context) {
-  try {
-    const { slug } = context.params;
+const svg = `
+<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
 
-    // ======================
-    // FETCH DATA
-    // ======================
-    let post = null;
+  <defs>
+    <!-- Background gradient -->
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
 
-    try {
-      const res = await fetch("https://api.niadzgn.workers.dev/posts");
-      const data = await res.json();
-      post = data.find(p => p.slug === slug);
-    } catch {}
+    <!-- Accent gradient -->
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4f46e5"/>
+      <stop offset="100%" stop-color="#22d3ee"/>
+    </linearGradient>
 
-    const title = post?.title || formatSlug(slug);
-    const kategori = post?.kategori || "Blog";
+    <!-- Glow -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="20" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
 
-    // ======================
-    // SVG TEMPLATE
-    // ======================
-    const svg = `
-    <svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="#4f46e5"/>
-          <stop offset="100%" stop-color="#6366f1"/>
-        </linearGradient>
-      </defs>
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
 
-      <rect width="1200" height="630" fill="url(#bg)"/>
+  <!-- Decorative circle -->
+  <circle cx="1000" cy="100" r="200" fill="url(#accent)" opacity="0.2" filter="url(#glow)"/>
 
-      <text x="60" y="100" fill="white" font-size="28" opacity="0.8">
-        ${escapeXML(kategori)}
-      </text>
+  <!-- Wave -->
+  <path d="M0,500 C300,400 900,700 1200,550 L1200,630 L0,630 Z"
+        fill="url(#accent)" opacity="0.15"/>
 
-      <text x="60" y="300" fill="white" font-size="56" font-weight="bold">
-        ${wrapText(title, 30)}
-      </text>
+  <!-- Category badge -->
+  <rect x="60" y="60" rx="12" ry="12" width="200" height="40" fill="#4f46e5"/>
+  <text x="80" y="88" fill="white" font-size="20">
+    ${escapeXML(kategori)}
+  </text>
 
-      <text x="60" y="580" fill="white" font-size="24" opacity="0.8">
-        niadzgn.pages.dev
-      </text>
-    </svg>
-    `;
+  <!-- Title -->
+  <text x="60" y="250" fill="white" font-size="56" font-weight="bold">
+    ${wrapText(title, 28)}
+  </text>
 
-    return new Response(svg, {
-      headers: {
-        "Content-Type": "image/svg+xml",
-        "Cache-Control": "public, max-age=86400"
-      }
-    });
+  <!-- Footer -->
+  <text x="60" y="580" fill="#94a3b8" font-size="22">
+    niadzgn.pages.dev
+  </text>
 
-  } catch (err) {
-    return new Response("OG Error: " + err.message, { status: 500 });
-  }
-}
-
-// ======================
-// UTIL
-// ======================
-function formatSlug(slug = "") {
-  return decodeURIComponent(slug)
-    .replace(/-/g, " ")
-    .replace(/\b\w/g, c => c.toUpperCase());
-}
-
-function escapeXML(str = "") {
-  return str.replace(/[<>&'"]/g, c => ({
-    "<": "&lt;",
-    ">": "&gt;",
-    "&": "&amp;",
-    "'": "&apos;",
-    '"': "&quot;"
-  }[c]));
-}
-
-function wrapText(text, maxLen) {
-  const words = text.split(" ");
-  let lines = [];
-  let current = "";
-
-  for (let w of words) {
-    if ((current + w).length > maxLen) {
-      lines.push(current);
-      current = w + " ";
-    } else {
-      current += w + " ";
-    }
-  }
-  lines.push(current);
-
-  return lines.map((line, i) =>
-    `<tspan x="60" dy="${i === 0 ? 0 : 60}">${escapeXML(line)}</tspan>`
-  ).join("");
-}
+</svg>
+`;
