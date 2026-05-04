@@ -1,4 +1,5 @@
 import { SITE, sanitizeSlug } from "../../lib/config";
+import { getPost } from "../../lib/api";
 
 export async function onRequest(context) {
   try {
@@ -10,13 +11,11 @@ export async function onRequest(context) {
     slug = sanitizeSlug(slug);
 
     // ======================
-    // FETCH DATA (OPTIONAL)
+    // FETCH DATA (PAKAI API LAYER)
     // ======================
     let post = null;
     try {
-      const res = await fetch("https://api.niadzgn.workers.dev/posts");
-      const data = await res.json();
-      post = data.find(p => sanitizeSlug(p.slug) === slug);
+      post = await getPost(slug);
     } catch {}
 
     const title = post?.title || formatSlug(slug);
@@ -76,7 +75,7 @@ export async function onRequest(context) {
 
   <rect x="100" y="420" width="300" height="4" fill="url(#accent)" opacity="0.8"/>
 
-  <!-- Footer pakai config -->
+  <!-- Footer -->
   <text x="100" y="520" fill="#94a3b8" font-size="22" font-family="sans-serif">
     ${SITE.domain}
   </text>
