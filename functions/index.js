@@ -39,22 +39,24 @@ export async function onRequest(context) {
       title: "Auto Blog Modern",
       description: "Artikel otomatis + SEO + cepat",
       canonical: "https://niadzgn.pages.dev" + (page > 1 ? "/?page=" + page : ""),
+	  
 	    // ✅ TARUH DI SINI
-schema: `
-<script type="application/ld+json">
-{
- "@context": "https://schema.org",
- "@type": "WebSite",
- "name": "Auto Blog",
- "url": "https://niadzgn.pages.dev",
- "potentialAction": {
-   "@type": "SearchAction",
-   "target": "https://niadzgn.pages.dev/?q={search_term_string}",
-   "query-input": "required name=search_term_string"
- }
-}
-</script>
-`,
+  schema: `
+  ${robotsMeta}
+  <script type="application/ld+json">
+  {
+   "@context": "https://schema.org",
+   "@type": "WebSite",
+   "name": "Auto Blog",
+   "url": "https://niadzgn.pages.dev",
+   "potentialAction": {
+     "@type": "SearchAction",
+     "target": "https://niadzgn.pages.dev/?q={search_term_string}",
+     "query-input": "required name=search_term_string"
+   }
+  }
+  </script>
+  `,
       content: `
 
 <div class="hero">
