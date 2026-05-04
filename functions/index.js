@@ -31,7 +31,7 @@ export async function onRequest(context) {
     const grid = currentPosts.map(p => `
       <div class="card">
         <a href="/post/${sanitizeSlug(p.slug)}">
-          <img loading="lazy" src="/og/${post.slug}" alt="${post.title}">
+         <img loading="lazy" src="https://picsum.photos/seed/${sanitizeSlug(p.slug)}/400/300">
           <h3>${p.title}</h3>
         </a>
       </div>
