@@ -6,19 +6,29 @@ const API = "https://api.niadzgn.workers.dev";
 export async function onRequest(context) {
   return withCache(context, 3600, async () => {
     try {
-      const { slug } = context.params;
       const url = new URL(context.request.url);
+      const slug = (context.params.slug || "").toLowerCase();
       const page = parseInt(url.searchParams.get("page")) || 1;
 
       const posts = await getPosts();
 
-      const filtered = posts.filter(p => p.kategori === slug);
+      // ✅ FIX: case insensitive + null safe
+      const filtered = posts.filter(
+        p => (p.kategori || "").toLowerCase() === slug
+      );
 
       if (!filtered.length) {
-        return new Response("Kategori tidak ditemukan", { status: 404 });
+        return html({
+          title: "Kategori tidak ditemukan",
+          description: "Tidak ada artikel di kategori ini",
+          slug,
+          content: `<h1>Kategori "${slug}" tidak ditemukan</h1>`
+        });
       }
 
+      // ======================
       // PAGINATION
+      // ======================
       const perPage = 12;
       const totalPage = Math.ceil(filtered.length / perPage);
 
@@ -39,13 +49,13 @@ export async function onRequest(context) {
         description: `Artikel dalam kategori ${slug}`,
         slug,
         content: `
-        <h1>Kategori: ${slug}</h1>
+          <h1>Kategori: ${slug}</h1>
 
-        <div class="grid">
-          ${grid}
-        </div>
+          <div class="grid">
+            ${grid}
+          </div>
 
-        ${pagination(slug, page, totalPage)}
+          ${pagination(slug, page, totalPage)}
         `
       });
 
@@ -78,7 +88,7 @@ async function withCache(context, ttl, handler) {
   res = new Response(res.body, res);
   res.headers.set("cache-control", `public, max-age=${ttl}`);
 
-  context.waitUntil(cache.put(cacheKey = key, res.clone()));
+  context.waitUntil(cache.put(key, res.clone()));
 
   return res;
 }
@@ -87,6 +97,8 @@ async function withCache(context, ttl, handler) {
 // PAGINATION
 // ======================
 function pagination(slug, current, total) {
+  if (total <= 1) return "";
+
   let html = `<div class="pagination">`;
 
   const group = Math.floor((current - 1) / 5);
@@ -133,6 +145,7 @@ function html({ title, description, slug, content }) {
 
 <meta name="twitter:card" content="summary">
 
+<!-- JSON-LD -->
 <script type="application/ld+json">
 {
  "@context": "https://schema.org",
