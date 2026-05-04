@@ -28,7 +28,7 @@ export async function onRequest(context) {
       .slice(0, 6);
 
     // ======================
-    // INTERNAL LINK
+    // INTERNAL LINK (UPGRADE AI SEO)
     // ======================
     post.content = autoLink(post.content, related);
 
@@ -78,64 +78,59 @@ export async function onRequest(context) {
     // ======================
     // RENDER
     // ======================
-const ogImage = "https://niadzgn.pages.dev/og/" + slug;
+    const ogImage = "https://niadzgn.pages.dev/og/" + slug;
 
-return layout({
-  title: post.title,
-  description: stripHTML(post.content).slice(0, 160),
+    return layout({
+      title: post.title,
+      description: stripHTML(post.content).slice(0, 160),
+      canonical: "https://niadzgn.pages.dev/post/" + slug,
+      image: ogImage,
+      schema: schema,
 
-  // ✅ WAJIB
-  canonical: "https://niadzgn.pages.dev/post/" + slug,
+      content: `
+      ${breadcrumb}
 
-  // ✅ WAJIB (biar share bagus)
-  image: ogImage,
+      <article class="post">
+        <img loading="lazy" src="/og/${slug}" alt="${post.title}">
+        <h1>${post.title}</h1>
 
-  // ✅ schema tetap di head
-  schema: schema,
+        <p>⏱ ${readingTime} min read</p>
 
-  content: `
-  
-  ${breadcrumb}
+        <div class="post-content">
+          ${post.content}
+        </div>
+      </article>
 
-  <article class="post">
-   <img loading="lazy" src="/og/${slug}" alt="${post.title}">
-    <h1>${post.title}</h1>
-
-    <p>⏱ ${readingTime} min read</p>
-
-    <div class="post-content">
-      ${post.content}
-    </div>
-  </article>
-
-  <h3>Artikel Terkait</h3>
-  <div class="grid">
-    ${related.map(p => `
-      <div class="card">
-        <a href="/post/${p.slug}">
-          <h4>${p.title}</h4>
-        </a>
+      <h3>Artikel Terkait</h3>
+      <div class="grid">
+        ${related.map(p => `
+          <div class="card">
+            <a href="/post/${p.slug}">
+              <h4>${p.title}</h4>
+            </a>
+          </div>
+        `).join("")}
       </div>
-    `).join("")}
-  </div>
-
-  `
-});
+      `
+    });
 
   } catch (e) {
     return new Response("Error: " + e.message, { status: 500 });
   }
 }
 
+// ======================
+// INTERNAL LINK (SMART AI SEO)
+// ======================
 function autoLink(content, related = []) {
   if (!content) return "";
 
   let used = new Set();
   let count = 0;
-  const MAX_LINK = 5;
+  const MAX_LINK = 6;
 
   // ======================
-  // SMART KEYWORD DETECTION
+  // EXTRACT KEYWORD DARI KONTEN
   // ======================
   const words = stripHTML(content)
     .toLowerCase()
@@ -144,29 +139,38 @@ function autoLink(content, related = []) {
     .filter(w => w.length > 4);
 
   const freq = {};
-  words.forEach(w => freq[w] = (freq[w] || 0) + 1);
+  words.forEach(w => {
+    freq[w] = (freq[w] || 0) + 1;
+  });
 
   const topKeywords = Object.keys(freq)
     .sort((a, b) => freq[b] - freq[a])
-    .slice(0, 15);
-
-  let linked = false;
+    .slice(0, 20);
 
   // ======================
-  // TRY SMART LINK
+  // SCORING RELATED POST
   // ======================
-  content = content.replace(/>([^<]+)</g, (match, text) => {
-    related.forEach(p => {
+  const candidates = related.map(p => {
+    const titleWords = p.title.toLowerCase().split(" ");
+    const score = titleWords.filter(w => topKeywords.includes(w)).length;
+    return { ...p, score };
+  }).sort((a, b) => b.score - a.score);
+
+  // ======================
+  // INJECT LINK
+  // ======================
+  return content.replace(/>([^<]+)</g, (match, text) => {
+
+    candidates.forEach(p => {
       if (count >= MAX_LINK) return;
 
-      const titleWords = p.title.toLowerCase().split(" ");
+      const keywords = p.title
+        .toLowerCase()
+        .split(" ")
+        .filter(w => w.length > 4);
 
-      titleWords.forEach(keyword => {
-        if (
-          keyword.length < 4 ||
-          used.has(keyword) ||
-          !topKeywords.includes(keyword)
-        ) return;
+      keywords.forEach(keyword => {
+        if (used.has(keyword) || count >= MAX_LINK) return;
 
         const regex = new RegExp(`\\b${keyword}\\b`, "i");
 
@@ -178,33 +182,12 @@ function autoLink(content, related = []) {
 
           used.add(keyword);
           count++;
-          linked = true;
         }
       });
     });
 
     return ">" + text + "<";
   });
-
-  // ======================
-  // FALLBACK (PASTI LINK)
-  // ======================
-  if (!linked) {
-    related.slice(0, 3).forEach(p => {
-      const keyword = p.title.split(" ").slice(0, 2).join(" ");
-
-      const regex = new RegExp(keyword, "i");
-
-      if (regex.test(content)) {
-        content = content.replace(
-          regex,
-          `<a href="/post/${p.slug}">${keyword}</a>`
-        );
-      }
-    });
-  }
-
-  return content;
 }
 
 // ======================
