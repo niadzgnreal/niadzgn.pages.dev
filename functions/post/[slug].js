@@ -13,7 +13,10 @@ export async function onRequest(context) {
       if (!post || post.error) {
         return new Response("404 Not Found", { status: 404 });
       }
-
+   
+      // 🔥 TAMBAHKAN DI SINI
+     post.content = autoLink(post.content, post.related);
+      
       const relatedHTML = (post.related || []).map(p => `
         <div class="card">
           <a href="/post/${p.slug}">
