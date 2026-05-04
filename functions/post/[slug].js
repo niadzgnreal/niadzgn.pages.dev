@@ -28,7 +28,7 @@ export async function onRequest(context) {
       .slice(0, 6);
 
     // ======================
-    // INTERNAL LINK
+    // INTERNAL LINK (UPGRADE AI SEO)
     // ======================
     post.content = autoLink(post.content, related);
 
@@ -78,49 +78,41 @@ export async function onRequest(context) {
     // ======================
     // RENDER
     // ======================
-const ogImage = "https://niadzgn.pages.dev/og/" + slug;
+    const ogImage = "https://niadzgn.pages.dev/og/" + slug;
 
-return layout({
-  title: post.title,
-  description: stripHTML(post.content).slice(0, 160),
+    return layout({
+      title: post.title,
+      description: stripHTML(post.content).slice(0, 160),
+      canonical: "https://niadzgn.pages.dev/post/" + slug,
+      image: ogImage,
+      schema: schema,
 
-  // ✅ WAJIB
-  canonical: "https://niadzgn.pages.dev/post/" + slug,
+      content: `
+      ${breadcrumb}
 
-  // ✅ WAJIB (biar share bagus)
-  image: ogImage,
+      <article class="post">
+        <img loading="lazy" src="/og/${slug}" alt="${post.title}">
+        <h1>${post.title}</h1>
 
-  // ✅ schema tetap di head
-  schema: schema,
+        <p>⏱ ${readingTime} min read</p>
 
-  content: `
-  
-  ${breadcrumb}
+        <div class="post-content">
+          ${post.content}
+        </div>
+      </article>
 
-  <article class="post">
-   <img loading="lazy" src="/og/${slug}" alt="${post.title}">
-    <h1>${post.title}</h1>
-
-    <p>⏱ ${readingTime} min read</p>
-
-    <div class="post-content">
-      ${post.content}
-    </div>
-  </article>
-
-  <h3>Artikel Terkait</h3>
-  <div class="grid">
-    ${related.map(p => `
-      <div class="card">
-        <a href="/post/${p.slug}">
-          <h4>${p.title}</h4>
-        </a>
+      <h3>Artikel Terkait</h3>
+      <div class="grid">
+        ${related.map(p => `
+          <div class="card">
+            <a href="/post/${p.slug}">
+              <h4>${p.title}</h4>
+            </a>
+          </div>
+        `).join("")}
       </div>
-    `).join("")}
-  </div>
-
-  `
-});
+      `
+    });
 
   } catch (e) {
     return new Response("Error: " + e.message, { status: 500 });
@@ -128,32 +120,70 @@ return layout({
 }
 
 // ======================
-// INTERNAL LINK (ANTI SPAM)
+// INTERNAL LINK (SMART AI SEO)
 // ======================
 function autoLink(content, related = []) {
   if (!content) return "";
 
   let used = new Set();
   let count = 0;
-  const MAX_LINK = 5;
+  const MAX_LINK = 6;
 
+  // ======================
+  // EXTRACT KEYWORD DARI KONTEN
+  // ======================
+  const words = stripHTML(content)
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]/g, "")
+    .split(" ")
+    .filter(w => w.length > 4);
+
+  const freq = {};
+  words.forEach(w => {
+    freq[w] = (freq[w] || 0) + 1;
+  });
+
+  const topKeywords = Object.keys(freq)
+    .sort((a, b) => freq[b] - freq[a])
+    .slice(0, 20);
+
+  // ======================
+  // SCORING RELATED POST
+  // ======================
+  const candidates = related.map(p => {
+    const titleWords = p.title.toLowerCase().split(" ");
+    const score = titleWords.filter(w => topKeywords.includes(w)).length;
+    return { ...p, score };
+  }).sort((a, b) => b.score - a.score);
+
+  // ======================
+  // INJECT LINK
+  // ======================
   return content.replace(/>([^<]+)</g, (match, text) => {
-    related.forEach(p => {
+
+    candidates.forEach(p => {
       if (count >= MAX_LINK) return;
 
-      const keyword = p.title.split(" ")[0]?.toLowerCase();
-      if (!keyword || used.has(keyword)) return;
+      const keywords = p.title
+        .toLowerCase()
+        .split(" ")
+        .filter(w => w.length > 4);
 
-      const regex = new RegExp(`\\b${keyword}\\b`, "i");
+      keywords.forEach(keyword => {
+        if (used.has(keyword) || count >= MAX_LINK) return;
 
-      if (regex.test(text)) {
-        text = text.replace(
-          regex,
-          `<a href="/post/${p.slug}">${keyword}</a>`
-        );
-        used.add(keyword);
-        count++;
-      }
+        const regex = new RegExp(`\\b${keyword}\\b`, "i");
+
+        if (regex.test(text)) {
+          text = text.replace(
+            regex,
+            `<a href="/post/${p.slug}">${keyword}</a>`
+          );
+
+          used.add(keyword);
+          count++;
+        }
+      });
     });
 
     return ">" + text + "<";
