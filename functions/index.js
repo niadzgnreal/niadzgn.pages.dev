@@ -35,7 +35,7 @@ export async function onRequest(context) {
   loading="lazy"
   src="/og/${sanitizeSlug(p.slug)}"
   alt="${p.title}"
-  width="342"
+  width="458"
   height="210"
 />
 
