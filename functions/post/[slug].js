@@ -100,7 +100,7 @@ export async function onRequest(context) {
       ${breadcrumb}
 
       <article class="post">
-        <img loading="lazy" src="/og/${slug}" alt="${post.title}" width="760" height="200">
+        <img loading="lazy" src="/og/${slug}" alt="${post.title}" width="500" height="263">
         <h1>${post.title}</h1>
 
         <p>⏱ ${readingTime} min read</p>
