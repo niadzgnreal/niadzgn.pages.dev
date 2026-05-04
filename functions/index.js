@@ -8,7 +8,9 @@ export async function onRequest(context) {
   try {
     const url = new URL(context.request.url);
     const page = parseInt(url.searchParams.get("page")) || 1;
-
+const robotsMeta = page > 1
+  ? '<meta name="robots" content="noindex,follow">'
+  : '';
     const posts = await getPosts();
 
     // ======================
@@ -41,7 +43,8 @@ export async function onRequest(context) {
       canonical: "https://niadzgn.pages.dev" + (page > 1 ? "/?page=" + page : ""),
 	  
 	    // ✅ TARUH DI SINI
-schema: `
+  schema: `
+  ${robotsMeta}
 <script type="application/ld+json">
 {
  "@context": "https://schema.org",
