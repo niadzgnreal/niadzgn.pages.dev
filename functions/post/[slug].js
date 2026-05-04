@@ -28,7 +28,7 @@ export async function onRequest(context) {
       .slice(0, 6);
 
     // ======================
-    // INTERNAL LINK (UPGRADE AI SEO)
+    // INTERNAL LINK
     // ======================
     post.content = autoLink(post.content, related);
 
@@ -78,41 +78,49 @@ export async function onRequest(context) {
     // ======================
     // RENDER
     // ======================
-    const ogImage = "https://niadzgn.pages.dev/og/" + slug;
+const ogImage = "https://niadzgn.pages.dev/og/" + slug;
 
-    return layout({
-      title: post.title,
-      description: stripHTML(post.content).slice(0, 160),
-      canonical: "https://niadzgn.pages.dev/post/" + slug,
-      image: ogImage,
-      schema: schema,
+return layout({
+  title: post.title,
+  description: stripHTML(post.content).slice(0, 160),
 
-      content: `
-      ${breadcrumb}
+  // ✅ WAJIB
+  canonical: "https://niadzgn.pages.dev/post/" + slug,
 
-      <article class="post">
-        <img loading="lazy" src="/og/${slug}" alt="${post.title}">
-        <h1>${post.title}</h1>
+  // ✅ WAJIB (biar share bagus)
+  image: ogImage,
 
-        <p>⏱ ${readingTime} min read</p>
+  // ✅ schema tetap di head
+  schema: schema,
 
-        <div class="post-content">
-          ${post.content}
-        </div>
-      </article>
+  content: `
+  
+  ${breadcrumb}
 
-      <h3>Artikel Terkait</h3>
-      <div class="grid">
-        ${related.map(p => `
-          <div class="card">
-            <a href="/post/${p.slug}">
-              <h4>${p.title}</h4>
-            </a>
-          </div>
-        `).join("")}
+  <article class="post">
+   <img loading="lazy" src="/og/${slug}" alt="${post.title}">
+    <h1>${post.title}</h1>
+
+    <p>⏱ ${readingTime} min read</p>
+
+    <div class="post-content">
+      ${post.content}
+    </div>
+  </article>
+
+  <h3>Artikel Terkait</h3>
+  <div class="grid">
+    ${related.map(p => `
+      <div class="card">
+        <a href="/post/${p.slug}">
+          <h4>${p.title}</h4>
+        </a>
       </div>
-      `
-    });
+    `).join("")}
+  </div>
+
+  `
+});
 
   } catch (e) {
     return new Response("Error: " + e.message, { status: 500 });
