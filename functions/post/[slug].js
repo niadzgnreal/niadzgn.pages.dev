@@ -119,18 +119,15 @@ export async function onRequest(context) {
   }
 }
 
-// ======================
-// INTERNAL LINK (SMART AI SEO)
-// ======================
 function autoLink(content, related = []) {
   if (!content) return "";
 
   let used = new Set();
   let count = 0;
-  const MAX_LINK = 6;
+  const MAX_LINK = 5;
 
   // ======================
-  // EXTRACT KEYWORD DARI KONTEN
+  // SMART KEYWORD DETECTION
   // ======================
   const words = stripHTML(content)
     .toLowerCase()
@@ -139,38 +136,29 @@ function autoLink(content, related = []) {
     .filter(w => w.length > 4);
 
   const freq = {};
-  words.forEach(w => {
-    freq[w] = (freq[w] || 0) + 1;
-  });
+  words.forEach(w => freq[w] = (freq[w] || 0) + 1);
 
   const topKeywords = Object.keys(freq)
     .sort((a, b) => freq[b] - freq[a])
-    .slice(0, 20);
+    .slice(0, 15);
+
+  let linked = false;
 
   // ======================
-  // SCORING RELATED POST
+  // TRY SMART LINK
   // ======================
-  const candidates = related.map(p => {
-    const titleWords = p.title.toLowerCase().split(" ");
-    const score = titleWords.filter(w => topKeywords.includes(w)).length;
-    return { ...p, score };
-  }).sort((a, b) => b.score - a.score);
-
-  // ======================
-  // INJECT LINK
-  // ======================
-  return content.replace(/>([^<]+)</g, (match, text) => {
-
-    candidates.forEach(p => {
+  content = content.replace(/>([^<]+)</g, (match, text) => {
+    related.forEach(p => {
       if (count >= MAX_LINK) return;
 
-      const keywords = p.title
-        .toLowerCase()
-        .split(" ")
-        .filter(w => w.length > 4);
+      const titleWords = p.title.toLowerCase().split(" ");
 
-      keywords.forEach(keyword => {
-        if (used.has(keyword) || count >= MAX_LINK) return;
+      titleWords.forEach(keyword => {
+        if (
+          keyword.length < 4 ||
+          used.has(keyword) ||
+          !topKeywords.includes(keyword)
+        ) return;
 
         const regex = new RegExp(`\\b${keyword}\\b`, "i");
 
@@ -182,12 +170,33 @@ function autoLink(content, related = []) {
 
           used.add(keyword);
           count++;
+          linked = true;
         }
       });
     });
 
     return ">" + text + "<";
   });
+
+  // ======================
+  // FALLBACK (PASTI LINK)
+  // ======================
+  if (!linked) {
+    related.slice(0, 3).forEach(p => {
+      const keyword = p.title.split(" ").slice(0, 2).join(" ");
+
+      const regex = new RegExp(keyword, "i");
+
+      if (regex.test(content)) {
+        content = content.replace(
+          regex,
+          `<a href="/post/${p.slug}">${keyword}</a>`
+        );
+      }
+    });
+  }
+
+  return content;
 }
 
 // ======================
