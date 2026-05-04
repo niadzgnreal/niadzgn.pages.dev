@@ -32,12 +32,13 @@ export async function onRequest(context) {
      <div class="card">
   <a href="/post/${sanitizeSlug(p.slug)}">
     <img 
-      loading="lazy"
-      src="/og/${sanitizeSlug(p.slug)}"
-      alt="${p.title}"
-      width="400"
-      height="300"
-    >
+  loading="lazy"
+  src="/og/${sanitizeSlug(p.slug)}"
+  alt="${p.title}"
+  width="400"
+  height="210"
+/>
+
     <h3>${p.title}</h3>
   </a>
 </div>
