@@ -36,7 +36,7 @@ export async function onRequest(context) {
   src="/og/${sanitizeSlug(p.slug)}"
   alt="${p.title}"
   width="400"
-  height="190"
+  height="179"
 />
 
     <h3>${p.title}</h3>
