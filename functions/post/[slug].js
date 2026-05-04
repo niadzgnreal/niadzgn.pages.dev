@@ -1,35 +1,100 @@
 import { layout } from "../../lib/render";
 
+const API = "https://api.niadzgn.workers.dev";
+
+// ======================
+// MAIN
+// ======================
 export async function onRequest(context) {
-  const { slug } = context.params;
+  try {
+    const { slug } = context.params;
 
-  // ambil semua post
-  const posts = await fetch("https://api.niadzgn.workers.dev/posts")
-    .then(r=>r.json());
+    const posts = await fetch(API + "/posts").then(r => r.json());
 
-  // ambil post utama
-  const post = posts.find(p => p.slug === slug);
+    const post = posts.find(p => p.slug === slug);
 
-  if (!post) {
-    return new Response("404", { status: 404 });
-  }
+    if (!post) {
+      return new Response("404 Not Found", { status: 404 });
+    }
 
-  // 🔥 GENERATE RELATED
-  const related = posts
-    .filter(p =>
-      p.slug !== slug &&
-      p.kategori === post.kategori
-    )
-    .slice(0, 6);
+    // ======================
+    // RELATED POSTS
+    // ======================
+    const related = posts
+      .filter(p =>
+        p.slug !== slug &&
+        (p.kategori || "").toLowerCase() === (post.kategori || "").toLowerCase()
+      )
+      .slice(0, 6);
 
-  return layout({
-    title: post.title,
-    description: post.title,
-    content: `
+    // ======================
+    // INTERNAL LINK
+    // ======================
+    post.content = autoLink(post.content, related);
+
+    // ======================
+    // READING TIME
+    // ======================
+    const readingTime = Math.ceil(stripHTML(post.content).split(" ").length / 200);
+
+    // ======================
+    // BREADCRUMB
+    // ======================
+    const breadcrumb = `
+    <nav class="breadcrumb">
+      <a href="/">Home</a> › 
+      <a href="/kategori/${post.kategori}">${post.kategori}</a> › 
+      <span>${post.title}</span>
+    </nav>
+    `;
+
+    // ======================
+    // SCHEMA
+    // ======================
+    const schema = `
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "BlogPosting",
+ "headline": "${post.title}",
+ "description": "${stripHTML(post.content).slice(0,150)}",
+ "mainEntityOfPage": "https://niadzgn.pages.dev/post/${slug}"
+}
+</script>
+
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "BreadcrumbList",
+ "itemListElement": [
+  {"@type":"ListItem","position":1,"name":"Home","item":"https://niadzgn.pages.dev/"},
+  {"@type":"ListItem","position":2,"name":"${post.kategori}","item":"https://niadzgn.pages.dev/kategori/${post.kategori}"},
+  {"@type":"ListItem","position":3,"name":"${post.title}"}
+ ]
+}
+</script>
+`;
+
+    // ======================
+    // RENDER
+    // ======================
+    return layout({
+      title: post.title,
+      description: stripHTML(post.content).slice(0, 160),
+      content: `
+      ${schema}
+
+      ${breadcrumb}
+
       <article class="post">
-        <img src="https://picsum.photos/seed/${slug}/800/400">
+        <img loading="lazy" src="https://picsum.photos/seed/${slug}/800/400">
         <h1>${post.title}</h1>
-        <div class="post-content">${post.content}</div>
+
+        <p>⏱ ${readingTime} min read</p>
+
+        <div class="post-content">
+          ${post.content}
+        </div>
       </article>
 
       <h3>Artikel Terkait</h3>
@@ -42,6 +107,50 @@ export async function onRequest(context) {
           </div>
         `).join("")}
       </div>
-    `
+      `
+    });
+
+  } catch (e) {
+    return new Response("Error: " + e.message, { status: 500 });
+  }
+}
+
+// ======================
+// INTERNAL LINK (ANTI SPAM)
+// ======================
+function autoLink(content, related = []) {
+  if (!content) return "";
+
+  let used = new Set();
+  let count = 0;
+  const MAX_LINK = 5;
+
+  return content.replace(/>([^<]+)</g, (match, text) => {
+    related.forEach(p => {
+      if (count >= MAX_LINK) return;
+
+      const keyword = p.title.split(" ")[0]?.toLowerCase();
+      if (!keyword || used.has(keyword)) return;
+
+      const regex = new RegExp(`\\b${keyword}\\b`, "i");
+
+      if (regex.test(text)) {
+        text = text.replace(
+          regex,
+          `<a href="/post/${p.slug}">${keyword}</a>`
+        );
+        used.add(keyword);
+        count++;
+      }
+    });
+
+    return ">" + text + "<";
   });
+}
+
+// ======================
+// UTIL
+// ======================
+function stripHTML(html) {
+  return html.replace(/<[^>]*>?/gm, "");
 }
