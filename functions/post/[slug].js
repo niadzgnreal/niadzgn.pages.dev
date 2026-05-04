@@ -78,37 +78,49 @@ export async function onRequest(context) {
     // ======================
     // RENDER
     // ======================
-    return layout({
-      title: post.title,
-      description: stripHTML(post.content).slice(0, 160),
-      content: `
-      ${schema}
+const ogImage = "https://niadzgn.pages.dev/og/" + slug;
 
-      ${breadcrumb}
+return layout({
+  title: post.title,
+  description: stripHTML(post.content).slice(0, 160),
 
-      <article class="post">
-        <img loading="lazy" src="https://picsum.photos/seed/${slug}/800/400">
-        <h1>${post.title}</h1>
+  // ✅ WAJIB
+  canonical: "https://niadzgn.pages.dev/post/" + slug,
 
-        <p>⏱ ${readingTime} min read</p>
+  // ✅ WAJIB (biar share bagus)
+  image: ogImage,
 
-        <div class="post-content">
-          ${post.content}
-        </div>
-      </article>
+  // ✅ schema tetap di head
+  schema: schema,
 
-      <h3>Artikel Terkait</h3>
-      <div class="grid">
-        ${related.map(p => `
-          <div class="card">
-            <a href="/post/${p.slug}">
-              <h4>${p.title}</h4>
-            </a>
-          </div>
-        `).join("")}
+  content: `
+  
+  ${breadcrumb}
+
+  <article class="post">
+    <img loading="lazy" src="https://picsum.photos/seed/${slug}/800/400">
+    <h1>${post.title}</h1>
+
+    <p>⏱ ${readingTime} min read</p>
+
+    <div class="post-content">
+      ${post.content}
+    </div>
+  </article>
+
+  <h3>Artikel Terkait</h3>
+  <div class="grid">
+    ${related.map(p => `
+      <div class="card">
+        <a href="/post/${p.slug}">
+          <h4>${p.title}</h4>
+        </a>
       </div>
-      `
-    });
+    `).join("")}
+  </div>
+
+  `
+});
 
   } catch (e) {
     return new Response("Error: " + e.message, { status: 500 });
