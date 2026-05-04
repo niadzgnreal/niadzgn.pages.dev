@@ -1,6 +1,13 @@
+import { SITE, sanitizeSlug } from "../../lib/config";
+
 export async function onRequest(context) {
   try {
-    const { slug } = context.params;
+    let { slug } = context.params;
+
+    // ======================
+    // SANITIZE SLUG
+    // ======================
+    slug = sanitizeSlug(slug);
 
     // ======================
     // FETCH DATA (OPTIONAL)
@@ -9,7 +16,7 @@ export async function onRequest(context) {
     try {
       const res = await fetch("https://api.niadzgn.workers.dev/posts");
       const data = await res.json();
-      post = data.find(p => p.slug === slug);
+      post = data.find(p => sanitizeSlug(p.slug) === slug);
     } catch {}
 
     const title = post?.title || formatSlug(slug);
@@ -22,51 +29,41 @@ export async function onRequest(context) {
 <svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
 
   <defs>
-    <!-- Background -->
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#020617"/>
       <stop offset="100%" stop-color="#0f172a"/>
     </linearGradient>
 
-    <!-- Accent -->
     <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#4f46e5"/>
       <stop offset="100%" stop-color="#22d3ee"/>
     </linearGradient>
 
-    <!-- Glass -->
     <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="rgba(255,255,255,0.15)"/>
       <stop offset="100%" stop-color="rgba(255,255,255,0.02)"/>
     </linearGradient>
 
-    <!-- Blur -->
     <filter id="blur">
       <feGaussianBlur stdDeviation="80"/>
     </filter>
   </defs>
 
-  <!-- BG -->
   <rect width="1200" height="630" fill="url(#bg)"/>
 
-  <!-- Glow blob -->
   <circle cx="1000" cy="120" r="260" fill="url(#accent)" opacity="0.25" filter="url(#blur)"/>
-
-  <!-- Secondary glow -->
   <circle cx="200" cy="550" r="200" fill="#4f46e5" opacity="0.15" filter="url(#blur)"/>
 
-  <!-- Glass card -->
   <rect x="50" y="50" width="1100" height="530" rx="24"
         fill="url(#glass)" stroke="rgba(255,255,255,0.1)"/>
 
-  <!-- Grid lines -->
   <g opacity="0.05">
     <line x1="0" y1="100" x2="1200" y2="100" stroke="#fff"/>
     <line x1="0" y1="300" x2="1200" y2="300" stroke="#fff"/>
     <line x1="0" y1="500" x2="1200" y2="500" stroke="#fff"/>
   </g>
 
-  <!-- Category badge -->
+  <!-- Category -->
   <rect x="100" y="100" rx="14" ry="14" width="260" height="48" fill="#4f46e5"/>
   <text x="130" y="132" fill="white" font-size="22" font-family="sans-serif">
     ${escapeXML(kategori)}
@@ -77,17 +74,15 @@ export async function onRequest(context) {
     ${wrapText(title, 26)}
   </text>
 
-  <!-- Divider -->
   <rect x="100" y="420" width="300" height="4" fill="url(#accent)" opacity="0.8"/>
 
-  <!-- Footer -->
+  <!-- Footer pakai config -->
   <text x="100" y="520" fill="#94a3b8" font-size="22" font-family="sans-serif">
-    niadzgn.pages.dev
+    ${SITE.domain}
   </text>
 
-  <!-- Mini badge -->
   <text x="980" y="560" fill="#94a3b8" font-size="18">
-    ⚡ AutoBlog
+    ⚡ ${SITE.name}
   </text>
 
 </svg>
@@ -106,7 +101,7 @@ export async function onRequest(context) {
 }
 
 // ======================
-// UTIL
+// UTIL (TIDAK DIUBAH)
 // ======================
 
 function formatSlug(slug = "") {
@@ -125,7 +120,6 @@ function escapeXML(str = "") {
   }[c]));
 }
 
-// wrap text jadi multiline SVG
 function wrapText(text, maxLen) {
   const words = text.split(" ");
   let lines = [];
