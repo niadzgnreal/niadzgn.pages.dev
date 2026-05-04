@@ -1,13 +1,41 @@
 export async function onRequest(context) {
   const { slug } = context.params;
 
-  return new Response(
-`<svg width="1200" height="630">
-<rect width="100%" height="100%" fill="#4f46e5"/>
-<text x="50%" y="50%" fill="white" font-size="40" text-anchor="middle">
-${slug}
-</text>
-</svg>`,
-  { headers: { "content-type": "image/svg+xml" } }
+  // Ambil title dari slug (simple fallback)
+  const title = decodeURIComponent(slug)
+    .replace(/-/g, " ")
+    .replace(/\b\w/g, c => c.toUpperCase());
+
+  return new ImageResponse(
+    (
+      <div
+        style={{
+          width: "1200px",
+          height: "630px",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          padding: "60px",
+          background: "linear-gradient(135deg,#4f46e5,#6366f1)",
+          color: "white",
+          fontSize: 48,
+          fontWeight: 700,
+        }}
+      >
+        {/* Title */}
+        <div style={{ lineHeight: 1.2 }}>
+          {title}
+        </div>
+
+        {/* Footer */}
+        <div style={{ fontSize: 24, opacity: 0.8 }}>
+          niadzgn.pages.dev
+        </div>
+      </div>
+    ),
+    {
+      width: 1200,
+      height: 630,
+    }
   );
 }
