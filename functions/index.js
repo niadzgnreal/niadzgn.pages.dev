@@ -1,16 +1,19 @@
 import { layout } from "../lib/render";
 import { getPosts } from "../lib/api";
+import { SITE, canonical, sanitizeSlug } from "../lib/config";
 
 // ======================
 // MAIN
 // ======================
 export async function onRequest(context) {
   try {
-    const url = new URL(context.request.url);
-    const page = parseInt(url.searchParams.get("page")) || 1;
-const robotsMeta = page > 1
-  ? '<meta name="robots" content="noindex,follow">'
-  : '';
+    const reqUrl = new URL(context.request.url);
+    const page = parseInt(reqUrl.searchParams.get("page")) || 1;
+
+    const robotsMeta = page > 1
+      ? '<meta name="robots" content="noindex,follow">'
+      : '';
+
     const posts = await getPosts();
 
     // ======================
@@ -27,8 +30,8 @@ const robotsMeta = page > 1
     // ======================
     const grid = currentPosts.map(p => `
       <div class="card">
-        <a href="/post/${p.slug}">
-          <img loading="lazy" src="https://picsum.photos/seed/${p.slug}/400/300">
+        <a href="/post/${sanitizeSlug(p.slug)}">
+          <img loading="lazy" src="https://picsum.photos/seed/${sanitizeSlug(p.slug)}/400/300">
           <h3>${p.title}</h3>
         </a>
       </div>
@@ -40,48 +43,46 @@ const robotsMeta = page > 1
     return layout({
       title: "Auto Blog Modern",
       description: "Artikel otomatis + SEO + cepat",
-      canonical: "https://niadzgn.pages.dev" + (page > 1 ? "/?page=" + page : ""),
-	  
-	    // ✅ TARUH DI SINI
-  schema: `
-  ${robotsMeta}
+
+      // ✅ pakai config (anti hardcode)
+      canonical: canonical(page > 1 ? "/?page=" + page : "/"),
+
+      // ⚠️ robots tetap di schema (tidak ubah struktur kamu)
+      schema: `
+      ${robotsMeta}
 <script type="application/ld+json">
 {
  "@context": "https://schema.org",
  "@type": "WebSite",
- "name": "Auto Blog",
- "url": "https://niadzgn.pages.dev",
+ "name": "${SITE.name}",
+ "url": "${SITE.domain}",
  "potentialAction": {
    "@type": "SearchAction",
-   "target": "https://niadzgn.pages.dev/?q={search_term_string}",
+   "target": "${SITE.domain}/?q={search_term_string}",
    "query-input": "required name=search_term_string"
  }
 }
 </script>
 `,
+
       content: `
 
 <div class="hero">
-  <h1>🚀 Auto Blog Modern</h1>
+  <h1>🚀 ${SITE.name}</h1>
   <p>Artikel SEO, tutorial, dan teknologi terbaru</p>
 </div>
 
-<!-- ======================
-SEO CONTENT (WAJIB)
-====================== -->
+<!-- SEO CONTENT -->
 <section class="seo-content">
   <h2>Blog SEO & Teknologi Terlengkap</h2>
   <p>
     Website ini menyediakan berbagai artikel seputar SEO, digital marketing, 
     dan teknologi terbaru yang dirancang untuk membantu meningkatkan traffic 
-    dan performa website Anda. Semua konten dibuat dengan struktur SEO modern 
-    dan mudah dipahami.
+    dan performa website Anda.
   </p>
 </section>
 
-<!-- ======================
-KATEGORI (INTERNAL LINK)
-====================== -->
+<!-- KATEGORI -->
 <section>
   <h2>Kategori Populer</h2>
   <div class="grid">
@@ -91,15 +92,11 @@ KATEGORI (INTERNAL LINK)
   </div>
 </section>
 
-<!-- ======================
-SEARCH
-====================== -->
+<!-- SEARCH -->
 <input class="search" placeholder="Cari artikel...">
 <div id="results"></div>
 
-<!-- ======================
-LATEST POSTS
-====================== -->
+<!-- POSTS -->
 <h2>Artikel Terbaru</h2>
 
 <div class="grid">
@@ -129,17 +126,14 @@ function pagination(current, total) {
   const start = group * 5 + 1;
   const end = Math.min(start + 4, total);
 
-  // PREV
   if (start > 1) {
     html += `<a href="/?page=${start - 1}">«</a>`;
   }
 
-  // NUMBER
   for (let i = start; i <= end; i++) {
     html += `<a href="/?page=${i}" class="${i === current ? "active" : ""}">${i}</a>`;
   }
 
-  // NEXT
   if (end < total) {
     html += `<a href="/?page=${end + 1}">»</a>`;
   }
