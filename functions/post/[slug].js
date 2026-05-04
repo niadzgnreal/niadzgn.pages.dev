@@ -7,11 +7,16 @@ const API = "https://api.niadzgn.workers.dev";
 // ======================
 export async function onRequest(context) {
   try {
-    const { slug } = context.params;
+    let { slug } = context.params;
+
+    // ======================
+    // SANITIZE SLUG (ANTI HTML INJECTION)
+    // ======================
+    slug = sanitizeSlug(slug);
 
     const posts = await fetch(API + "/posts").then(r => r.json());
 
-    const post = posts.find(p => p.slug === slug);
+    const post = posts.find(p => sanitizeSlug(p.slug) === slug);
 
     if (!post) {
       return new Response("404 Not Found", { status: 404 });
@@ -22,13 +27,13 @@ export async function onRequest(context) {
     // ======================
     const related = posts
       .filter(p =>
-        p.slug !== slug &&
+        sanitizeSlug(p.slug) !== slug &&
         (p.kategori || "").toLowerCase() === (post.kategori || "").toLowerCase()
       )
       .slice(0, 6);
 
     // ======================
-    // INTERNAL LINK (UPGRADE AI SEO)
+    // INTERNAL LINK (SAFE)
     // ======================
     post.content = autoLink(post.content, related);
 
@@ -105,7 +110,7 @@ export async function onRequest(context) {
       <div class="grid">
         ${related.map(p => `
           <div class="card">
-            <a href="/post/${p.slug}">
+            <a href="/post/${sanitizeSlug(p.slug)}">
               <h4>${p.title}</h4>
             </a>
           </div>
@@ -120,74 +125,57 @@ export async function onRequest(context) {
 }
 
 // ======================
-// INTERNAL LINK (SMART AI SEO)
+// AUTO INTERNAL LINK (SAFE VERSION)
 // ======================
 function autoLink(content, related = []) {
   if (!content) return "";
 
   let used = new Set();
   let count = 0;
-  const MAX_LINK = 6;
+  const MAX_LINK = 5;
 
-  // ======================
-  // EXTRACT KEYWORD DARI KONTEN
-  // ======================
-  const words = stripHTML(content)
-    .toLowerCase()
-    .replace(/[^a-z0-9 ]/g, "")
-    .split(" ")
-    .filter(w => w.length > 4);
+  return content.replace(/(<a[^>]*>.*?<\/a>)|>([^<]+)</gi, (match, linkPart, textPart) => {
 
-  const freq = {};
-  words.forEach(w => {
-    freq[w] = (freq[w] || 0) + 1;
-  });
+    // ✅ jangan ganggu link yang sudah ada
+    if (linkPart) return linkPart;
 
-  const topKeywords = Object.keys(freq)
-    .sort((a, b) => freq[b] - freq[a])
-    .slice(0, 20);
+    let text = textPart;
 
-  // ======================
-  // SCORING RELATED POST
-  // ======================
-  const candidates = related.map(p => {
-    const titleWords = p.title.toLowerCase().split(" ");
-    const score = titleWords.filter(w => topKeywords.includes(w)).length;
-    return { ...p, score };
-  }).sort((a, b) => b.score - a.score);
-
-  // ======================
-  // INJECT LINK
-  // ======================
-  return content.replace(/>([^<]+)</g, (match, text) => {
-
-    candidates.forEach(p => {
+    related.forEach(p => {
       if (count >= MAX_LINK) return;
 
-      const keywords = p.title
-        .toLowerCase()
-        .split(" ")
-        .filter(w => w.length > 4);
+      const keyword = p.title.split(" ").slice(0, 2).join(" ").toLowerCase();
+      if (!keyword || used.has(keyword)) return;
 
-      keywords.forEach(keyword => {
-        if (used.has(keyword) || count >= MAX_LINK) return;
+      const safeSlug = sanitizeSlug(p.slug);
 
-        const regex = new RegExp(`\\b${keyword}\\b`, "i");
+      const regex = new RegExp(`\\b${keyword}\\b`, "i");
 
-        if (regex.test(text)) {
-          text = text.replace(
-            regex,
-            `<a href="/post/${p.slug}">${keyword}</a>`
-          );
+      if (regex.test(text)) {
+        text = text.replace(
+          regex,
+          `<a href="/post/${safeSlug}">${keyword}</a>`
+        );
 
-          used.add(keyword);
-          count++;
-        }
-      });
+        used.add(keyword);
+        count++;
+      }
     });
 
     return ">" + text + "<";
   });
+}
+
+// ======================
+// SANITIZE SLUG
+// ======================
+function sanitizeSlug(slug) {
+  return encodeURIComponent(
+    (slug || "")
+      .replace(/<[^>]*>?/gm, "") // hapus HTML
+      .replace(/"/g, "")
+      .trim()
+  );
 }
 
 // ======================
