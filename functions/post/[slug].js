@@ -1,5 +1,14 @@
 import { layout } from "../../lib/render"; 
-import { SITE, canonical, ogImage as buildOg, sanitizeSlug, stripHTML, readingTime } from "../../lib/config"; 
+import {
+  SITE,
+  canonical,
+  ogImage as buildOg,
+  sanitizeSlug,
+  stripHTML,
+  readingTime,
+  postImage,
+  cardImage
+} from "../../lib/config";
 import { getPosts, getPost } from "../../lib/api";
 
 export async function onRequest(context){ try{ let { slug } = context.params; slug = sanitizeSlug(slug);
@@ -72,15 +81,7 @@ return layout({
 
   <article class="post">
 
-    <img
-      loading="eager"
-      fetchpriority="high"
-      decoding="async"
-      src="${og}"
-      alt="${post.title}"
-      width="1200"
-      height="630"
-    >
+    ${postImage(og, post.title)}
 
     <h1>${post.title}</h1>
 
@@ -99,15 +100,7 @@ return layout({
     ${related.map(p => `
       <div class="card">
         <a href="/post/${sanitizeSlug(p.slug)}">
-            <img 
-      loading="lazy"
-      decoding="async"
-      src="/og/${sanitizeSlug(p.slug)}"
-      alt="${p.title}"
-      width="400"
-      height="179"
-      
-    />
+            ${cardImage(`/og/${sanitizeSlug(p.slug)}`, p.title)}
           <h4>${p.title}</h4>
         </a>
       </div>
