@@ -1,45 +1,150 @@
 import { getPosts } from "../../lib/api";
 import { sanitizeSlug } from "../../lib/config";
 
-export async function onRequest(context) {
-  const url = new URL(context.request.url);
+export async function onRequest(context){
 
-  // ======================
-  // SANITIZE QUERY
-  // ======================
-  const q = sanitizeQuery(url.searchParams.get("q"));
+try{
 
-  const posts = await getPosts();
+const url = new URL(context.request.url);
 
-  const results = posts
-    .filter(p =>
-      (p.title || "").toLowerCase().includes(q)
-    )
-    .slice(0, 20)
-    .map(p => ({
-      title: escapeJSON(p.title),
-      slug: sanitizeSlug(p.slug)
-    }));
+// ======================
+// QUERY
+// ======================
+const q = sanitizeQuery(
+url.searchParams.get("q")
+);
 
-  return new Response(JSON.stringify(results), {
-    headers: { "content-type": "application/json" }
-  });
+// ======================
+// EMPTY QUERY
+// ======================
+if(!q || q.length < 2){
+
+return json([]);
+
+}
+
+// ======================
+// POSTS
+// ======================
+const posts = await getPosts();
+
+// ======================
+// FILTER
+// ======================
+const results = posts
+
+.filter(p=>{
+
+const title = String(
+p.title || ""
+).toLowerCase();
+
+return title.includes(q);
+
+})
+
+// ======================
+// SORT RELEVANCE
+// ======================
+.sort((a,b)=>{
+
+const aTitle = String(a.title || "").toLowerCase();
+
+const bTitle = String(b.title || "").toLowerCase();
+
+const aExact = aTitle.startsWith(q) ? 1 : 0;
+
+const bExact = bTitle.startsWith(q) ? 1 : 0;
+
+return bExact - aExact;
+
+})
+
+// ======================
+// LIMIT
+// ======================
+.slice(0,20)
+
+// ======================
+// JSON
+// ======================
+.map(p=>({
+
+title: escapeJSON(p.title),
+
+slug: sanitizeSlug(p.slug),
+
+kategori: sanitizeSlug(
+p.kategori || "umum"
+)
+
+}));
+
+return json(results);
+
+}catch(e){
+
+return new Response(
+JSON.stringify({
+error:e.message
+}),
+{
+status:500,
+headers:{
+"content-type":"application/json"
+}
+}
+);
+
+}
+
+}
+
+// ======================
+// JSON RESPONSE
+// ======================
+function json(data){
+
+return new Response(
+JSON.stringify(data),
+{
+headers:{
+"content-type":"application/json;charset=UTF-8",
+
+// ======================
+// CACHE
+// ======================
+"cache-control":
+"public,max-age=300"
+}
+}
+);
+
 }
 
 // ======================
 // SANITIZE QUERY
 // ======================
-function sanitizeQuery(q = "") {
-  return q
-    .toLowerCase()
-    .replace(/<[^>]*>?/gm, "") // hapus HTML
-    .replace(/[^\w\s-]/g, "")  // hanya huruf, angka, dash
-    .trim();
+function sanitizeQuery(q=""){
+
+return String(q)
+
+.toLowerCase()
+
+.replace(/<[^>]*>?/gm,"")
+
+.replace(/[^\w\s-]/g,"")
+
+.trim();
+
 }
 
 // ======================
-// ESCAPE JSON (AMAN)
+// ESCAPE JSON
 // ======================
-function escapeJSON(str = "") {
-  return String(str).replace(/</g, "\\u003c");
+function escapeJSON(str=""){
+
+return String(str)
+.replace(/</g,"\\u003c");
+
 }
