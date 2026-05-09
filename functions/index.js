@@ -1,6 +1,6 @@
 import { layout } from "../lib/render";
 import { getPosts } from "../lib/api";
-import { SITE, canonical, sanitizeSlug } from "../lib/config";
+import { SITE, canonical, sanitizeSlug, cardImage } from "../lib/config";
 
 // ======================
 // MAIN
@@ -31,13 +31,7 @@ export async function onRequest(context) {
     const grid = currentPosts.map(p => `
      <div class="card">
   <a href="/post/${sanitizeSlug(p.slug)}">
-    <img 
-  loading="lazy"
-  src="/og/${sanitizeSlug(p.slug)}"
-  alt="${p.title}"
-  width="400"
-  height="179"
-/>
+    ${cardImage(`/og/${sanitizeSlug(p.slug)}`, p.title)}
 
     <h3>${p.title}</h3>
   </a>
