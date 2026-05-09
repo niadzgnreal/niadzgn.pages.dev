@@ -1,15 +1,8 @@
 import { layout } from "../../lib/render";
+import { SITE, canonical, ogImage as buildOg } from "../../lib/config";
 
-import {
-  SITE,
-  canonical,
-  ogImage as buildOg,
-  sanitizeSlug,
-  stripHTML,
-  readingTime
-} from "../../lib/config";
+const API = "https://api.niadzgn.workers.dev";
 
-import { getPosts, getPost } from "../../lib/api";
 
 
 // ======================
