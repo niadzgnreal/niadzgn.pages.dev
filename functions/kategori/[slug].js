@@ -1,87 +1,106 @@
-import { layout } from "../../lib/render";
-import { canonical, sanitizeSlug, cardImage } from "../../lib/config";
-import { getByKategori } from "../../lib/api";
+import { layout } from "../../lib/render";import { canonical, sanitizeSlug, cardImage } from "../../lib/config";import { getByKategori } from "../../lib/api";
 
-export async function onRequest(context) {
+export async function onRequest(context){
 
-  const { slug } = context.params;
+const { slug } = context.params;
 
-  const safeSlug = sanitizeSlug(slug);
+const safeSlug = sanitizeSlug(slug);
 
-  // ======================
-  // PAGINATION
-  // ======================
-  const url = new URL(context.request.url);
+const reqUrl = new URL(context.request.url);
 
-  const page = Number(url.searchParams.get("page") || 1);
+const page = parseInt(reqUrl.searchParams.get("page")) || 1;
 
-  const PER_PAGE = 12;
+// ======================
+// DATA
+// ======================
+const filtered = await getByKategori(safeSlug);
 
-  // ======================
-  // DATA
-  // ======================
-  const filtered = await getByKategori(safeSlug);
+// ======================
+// PAGINATION
+// ======================
+const perPage = 12;
 
-  const totalPages = Math.ceil(filtered.length / PER_PAGE);
+const totalPage = Math.ceil(filtered.length / perPage);
 
-  const start = (page - 1) * PER_PAGE;
+const start = (page - 1) * perPage;
 
-  const currentPosts = filtered.slice(
-    start,
-    start + PER_PAGE
-  );
+const currentPosts = filtered.slice(start,start + perPage);
 
-  // ======================
-  // PAGINATION HTML
-  // ======================
-  let pagination = `<div class="pagination">`;
+// ======================
+// GRID
+// ======================
+const grid = currentPosts.map(p => `
+<div class="card">
+<a href="/post/${sanitizeSlug(p.slug)}">
+${cardImage(`/og/${sanitizeSlug(p.slug)}`,p.title)}
+<h3>${p.title}</h3>
+</a>
+</div>
+`).join("");
 
-  for(let i = 1; i <= totalPages; i++){
+// ======================
+// RENDER
+// ======================
+return layout({
+title:"Kategori " + safeSlug,
+description:"Kategori " + safeSlug,
 
-    pagination += `
-      <a
-        href="/kategori/${safeSlug}?page=${i}"
-        class="${i === page ? "active" : ""}"
-      >
-        ${i}
-      </a>
-    `;
-  }
+canonical: canonical(
+page > 1
+? "/kategori/" + safeSlug + "?page=" + page
+: "/kategori/" + safeSlug
+),
 
-  pagination += `</div>`;
+content:`
+<h1>Kategori: ${safeSlug}</h1>
 
-  return layout({
-    title: "Kategori " + safeSlug,
-    description: "Kategori " + safeSlug,
+<div class="grid">
+${grid}
+</div>
 
-    // ✅ SEO
-    canonical: canonical(
-      "/kategori/" + safeSlug + "?page=" + page
-    ),
+${pagination(page,totalPage,safeSlug)}
+`
+});
 
-    content: `
-      <h1>Kategori: ${safeSlug}</h1>
+}
 
-      <div class="grid">
+// ======================
+// PAGINATION
+// ======================
+function pagination(current,total,slug){
 
-        ${currentPosts.map(p => `
-          <div class="card">
-            <a href="/post/${sanitizeSlug(p.slug)}">
+if(total <= 1) return "";
 
-              ${cardImage(
-                `/og/${sanitizeSlug(p.slug)}`,
-                p.title
-              )}
+let html = `<div class="pagination">`;
 
-              <h3>${p.title}</h3>
+const group = Math.floor((current - 1) / 5);
 
-            </a>
-          </div>
-        `).join("")}
+const start = group * 5 + 1;
 
-      </div>
+const end = Math.min(start + 4,total);
 
-      ${pagination}
-    `
-  });
+if(start > 1){
+html += `<a href="/kategori/${slug}?page=${start - 1}">«</a>`;
+}
+
+for(let i = start; i <= end; i++){
+
+html += `
+<a
+href="/kategori/${slug}?page=${i}"
+class="${i === current ? "active" : ""}"
+>
+${i}
+</a>
+`;
+}
+
+if(end < total){
+html += `<a href="/kategori/${slug}?page=${end + 1}">»</a>`;
+}
+
+html += `</div>`;
+
+return html;
+
 }
