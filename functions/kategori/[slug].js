@@ -1,5 +1,5 @@
 import { layout } from "../../lib/render";
-import { canonical, sanitizeSlug } from "../../lib/config";
+import { canonical, sanitizeSlug, cardImage } from "../../lib/config";
 import { getByKategori } from "../../lib/api";
 
 export async function onRequest(context) {
@@ -21,13 +21,16 @@ export async function onRequest(context) {
 
     content: `
       <h1>Kategori: ${safeSlug}</h1>
-      <div class="grid">
-        ${filtered.map(p => `
-          <div class="card">
-            <a href="/post/${sanitizeSlug(p.slug)}">${p.title}</a>
-          </div>
-        `).join("")}
-      </div>
+     <div class="grid">
+  ${filtered.map(p => `
+    <div class="card">
+      <a href="/post/${sanitizeSlug(p.slug)}">
+        ${cardImage(`/og/${sanitizeSlug(p.slug)}`, p.title)}
+        <h3>${p.title}</h3>
+      </a>
+    </div>
+  `).join("")}
+</div>
     `
   });
 }
