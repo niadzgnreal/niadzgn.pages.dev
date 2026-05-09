@@ -1,7 +1,7 @@
 import { layout } from "../../lib/render";
 import { SITE, canonical, ogImage as buildOg } from "../../lib/config";
 
-const API = "https://api.niadzgn.workers.dev";
+
 
 // ======================
 // MAIN
