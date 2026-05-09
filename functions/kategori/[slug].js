@@ -31,7 +31,7 @@ const currentPosts = filtered.slice(start,start + perPage);
 // ======================
 const grid = currentPosts.map(p => `
 <div class="card">
-<a href="/post/${sanitizeSlug(p.slug)}">
+<a href="/${sanitizeSlug(p.kategori)}/${sanitizeSlug(p.slug)}">
 ${cardImage(`/og/${sanitizeSlug(p.slug)}`,p.title)}
 <h3>${p.title}</h3>
 </a>
