@@ -99,7 +99,15 @@ return layout({
     ${related.map(p => `
       <div class="card">
         <a href="/post/${sanitizeSlug(p.slug)}">
-          <img loading="lazy" decoding="async" src="/og/${sanitizeSlug(p.slug)}" alt="${p.title}" width="1200" height="630">
+            <img 
+      loading="lazy"
+      decoding="async"
+      src="/og/${sanitizeSlug(p.slug)}"
+      alt="${p.title}"
+      width="400"
+      height="179"
+      
+    />
           <h4>${p.title}</h4>
         </a>
       </div>
