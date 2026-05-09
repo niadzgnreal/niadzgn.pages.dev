@@ -6,8 +6,7 @@ import {
   ogImage as buildOg,
   sanitizeSlug,
   stripHTML,
-  readingTime,
-  metaDescription
+  readingTime
 } from "../../lib/config";
 
 import {
@@ -78,10 +77,9 @@ export async function onRequest(context) {
     // ======================
     // DESCRIPTION
     // ======================
-    const desc = metaDescription(
-      post.content,
-      160
-    );
+const desc = stripHTML(
+  post.content
+).slice(0, 160);
 
     // ======================
     // BREADCRUMB
